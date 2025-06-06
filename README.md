@@ -28,7 +28,7 @@ The repository is organized as follows:
   ```bash
   pip install -r requirements.txt
   ```
-- **Fetch models**: Access to a model zoo here: https://drive.google.com/drive/folders/1hOTihvbyIxsm5ygDpbUuJ7O_tzv4oXjC.
+- **Fetch models**: Access to a model zoo pretrained on COCO here: https://drive.google.com/drive/folders/1hOTihvbyIxsm5ygDpbUuJ7O_tzv4oXjC.
 
 ## Usage
 
