@@ -1,5 +1,5 @@
 import torch.nn as nn
-from models.collection.head_registry import HEADS
+from .head_registry import HEADS
 import timm
 
 

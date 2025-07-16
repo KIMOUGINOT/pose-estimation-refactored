@@ -7,7 +7,7 @@ def break_down_into_folder(video, output_dir, step, clip_size, clip_step, start_
     Splits `video` into multiple clips. Each clip starts every `step` frames,
     contains `clip_size` frames sampled every `clip_step` frames, and only frames
     between `start_idx` and `max_idx` (inclusive) are considered.
-    All output images are saved together under <output_dir>/<video_basename>/images/.
+    All output images are saved together under [OUTPUT_DIR]/[VIDEO_BASENAME]/images/.
     """
     # Prepare paths
     base_name = os.path.splitext(os.path.basename(video))[0]
@@ -15,12 +15,10 @@ def break_down_into_folder(video, output_dir, step, clip_size, clip_step, start_
     images_dir = os.path.join(root_dir)
     os.makedirs(images_dir, exist_ok=True)
 
-    # Open video
     vid = cv2.VideoCapture(video)
     if not vid.isOpened():
         raise IOError(f"Cannot open video file {video}")
 
-    # Count total frames
     total_frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
     if max_idx < 0 or max_idx >= total_frames:
         max_idx = total_frames - 1

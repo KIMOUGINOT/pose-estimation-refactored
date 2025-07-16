@@ -1,13 +1,13 @@
 data:
   dataset_roots:
-    - ../../Datasets/Coco
-    - ../../Datasets/mpii_human_pose_v1
-    - ../../Datasets/leeds-sport-pose-main
-    - ../../Datasets/padel_pose
+    # - Datasets/Coco
+    # - Datasets/mpii_human_pose_v1
+    # - Datasets/leeds-sport-pose-main
+    - Datasets/padel/padel_pose
   splits:
     train: person_keypoints_train.json
     val: person_keypoints_val.json
-  use_gt_bbox: [False, True, True, False]  # True or False for each dataset 
+  use_gt_bbox: [True, True, True, False]  # True or False for each dataset 
   images_dir: images
   image_size: [192, 256]        # w, h
   num_keypoints: 18
@@ -21,13 +21,13 @@ model:
   heatmap_size : [48,64]  
   num_keypoints: 18
   spec: 18 #18, 34, 50, 101, 152
-  pretrained : outputs/pose/resnet18_80_epochs_finetune_1/checkpoints/resnet18_80_epochs_finetune_1.ckpt 
+  pretrained : '' #outputs/pose/resnet18_80_epochs_finetune_1/checkpoints/resnet18_80_epochs_finetune_1.ckpt 
 
 train:
   max_epochs: 200
   lr: 0.001 #0.001
   lr_step: 50
   lr_gamma: 0.5
-  use_gpu: true
+  min_lr: 1e-6
   output_dir: outputs/
   evaluation_config: COCO_and_racket

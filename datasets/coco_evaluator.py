@@ -131,7 +131,7 @@ class CustomKeypointMetric:
         summary = self.compute()
         for group, results in summary.items():
             for k, v in results.items():
-                if 'AP' in k:
+                if 'AP@50:95' in k:
                     logger.experiment.add_scalar(f"metrics/{group}/{k}", v, step)
 
     def summarize(self):
@@ -228,72 +228,3 @@ def get_max_preds(batch_heatmaps):
     coords *= mask
 
     return coords, maxvals
-# class CocoEvaluator:
-#     def __init__(self, coco_gt, output_dir):
-#         self.coco_gt = coco_gt
-#         self.output_dir = output_dir
-#         self.expected_num_keypoints = self._infer_num_keypoints()
-
-#     def evaluate(self, heatmaps, metas, epoch=0):
-#         os.makedirs(self.output_dir, exist_ok=True)
-#         result_file = os.path.join(self.output_dir, f"keypoints_epoch{epoch}.json")
-
-#         coco_preds = self._format_predictions(heatmaps, metas)
-#         self._write_predictions_to_coco_json(coco_preds, result_file)
-#         if len(coco_preds) == 0:
-#             return OrderedDict({k: 0.0 for k in ['AP .5', 'AP .75', 'AP', 'AR .5', 'AR .75', 'AR']})
-
-#         coco_dt = self.coco_gt.loadRes(result_file)
-#         coco_eval = COCOeval(self.coco_gt, coco_dt, iouType="keypoints")
-#         coco_eval.evaluate()
-#         coco_eval.accumulate()
-#         coco_eval.summarize()
-
-#         stats_names = ['AP .5', 'AP .75', 'AP', 'AR .5', 'AR .75', 'AR']
-#         return OrderedDict({name: coco_eval.stats[i] for i, name in enumerate(stats_names)})
-
-#     def _infer_num_keypoints(self):
-#         for ann in self.coco_gt.dataset["annotations"]:
-#             kpts = ann.get("keypoints", [])
-#             if kpts:
-#                 return len(kpts) // 3
-#         raise ValueError("Could not infer number of keypoints from COCO annotations.")
-
-#     def _format_predictions(self, heatmaps, metas):
-#         B, K_pred, H, W = heatmaps.shape
-#         K_gt = self.expected_num_keypoints
-#         if K_pred > K_gt:
-#             print(f"Truncating predictions from {K_pred} to {K_gt} keypoints for COCO evaluation")
-
-#         results = []
-#         for i in range(B):
-#             K = min(K_pred, K_gt)
-#             coords = np.zeros((K, 2))  # [x, y]
-#             confs = np.zeros((K, 1))
-#         #     for k in range(K):
-#         #         hm = heatmaps[i, k]
-#         #         y, x = np.unravel_index(hm.argmax(), hm.shape)
-#         #         conf = float(hm[y, x].item())
-#         #         coords[k, 0] = float(x)
-#         #         coords[k, 1] = float(y)
-#         #         confs[k] = conf
-#             keypoints = get_final_preds(heatmaps[i][None,...])
-#             kpts = adjust_preds_to_shape(keypoints, (H,W), (256,192))[0].numpy()
-#             vis = [1 if (kpt[0]>0 and kpt[1] > 0) else 0 for kpt in kpts ]
-#             vis = np.array(vis)
-#             kpts = np.append(kpts, vis[...,None], axis=1)
-
-#             score = np.mean(vis)
-
-#             results.append({
-#                 "image_id": metas[i]["image_id"],
-#                 "category_id": 1,
-#                 "keypoints": kpts.flatten().tolist(),
-#                 "score": score
-#             })
-
-#         return results
-
-#     def _write_predictions_to_coco_json(self, predictions, save_path):
-#         with open(save_path, "w") as f:
-#             json.dump(predictions, f, indent=2)

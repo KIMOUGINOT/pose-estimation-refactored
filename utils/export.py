@@ -5,7 +5,6 @@ import torch
 import importlib.util
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from models.pose_estimation_model import PoseEstimationModel
 
 def parse_args():
@@ -17,7 +16,7 @@ def parse_args():
         help='Path to model config file (YAML)'
     )
     parser.add_argument(
-        '--ext', required=True,
+        '--ext', default='ckpt',
         help="Weight file extension: 'pt', 'pth' or 'ckpt'"
     )
     return parser.parse_args()

@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 from datasets.coco_annotation_loader import AnnotationLoader
 from datasets.sample_builder import SampleBuilder
+from utils.pose_transforms import transform 
 from PIL import Image
 import numpy as np
 import os
@@ -11,10 +12,10 @@ import cv2
 
 
 class COCODataset(Dataset):
-    def __init__(self, annotation_file, image_root, image_size=(192, 256), num_keypoints=17, target_generator=None, transform=None, use_gt_bbox=None):
+    def __init__(self, annotation_file, image_root, image_size=(192, 256), num_keypoints=17, is_train=False, target_generator=None, use_gt_bbox=None):
         self.image_root = image_root
-        self.transform, self.do_flip = transform
         self.target_generator = target_generator
+        self.is_train = is_train
         self.use_gt_bbox = use_gt_bbox
         self.num_keypoints = num_keypoints
         self.image_size = image_size
@@ -67,17 +68,7 @@ class COCODataset(Dataset):
             image = cv2.warpAffine(image, trans, self.image_size)
             keypoints = [affine_transform(kpt, trans) for kpt in keypoints]
 
-        transformed = self.transform(image=image, keypoints=keypoints)
-        image = transformed['image']
-        keypoints = transformed['keypoints']
-
-        if self.do_flip :
-            tmp = 0.0
-            
-            for right, left in self.pairs_to_flip :
-                tmp = keypoints[right]
-                keypoints[right] = keypoints[left]
-                keypoints[left] = tmp
+        image, keypoints, _ = transform(image, keypoints, self.image_size, is_train=self.is_train)
 
         joints = torch.tensor(keypoints, dtype=torch.float32)
 
@@ -89,8 +80,9 @@ class COCODataset(Dataset):
             'target': target,
             'target_weight': target_weight,
             'joints': joints,
-            'joints_vis': torch.tensor(sample['joints_vis'], dtype=torch.float32),
-        }
+            'joints_vis': torch.tensor(sample['joints_vis'], dtype=torch.float32).reshape(-1, 1),
+            'kp3d': torch.zeros((joints.shape[0], 3), dtype=torch.float32) #for 3D implem        
+            }
 
     def __len__(self):
         return len(self.db)

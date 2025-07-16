@@ -1,15 +1,14 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-import torchvision
 import cv2
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
 import io
 import torchvision.transforms.functional as F
+
 from models import collection
-import datasets
+import datasets as datasets
 
 class PoseEstimationModel(pl.LightningModule):
     def __init__(self, cfg):
@@ -29,7 +28,6 @@ class PoseEstimationModel(pl.LightningModule):
             self.model.load_state_dict(torch.load(cfg.model.pretrained), strict=False)
 
         self.criterion = nn.MSELoss()
-        # self.criterion = JointsMSELoss(use_target_weight=True)
 
     def forward(self, x):
         return self.model(x)
@@ -42,7 +40,6 @@ class PoseEstimationModel(pl.LightningModule):
             preds = preds[:, :targets.shape[1]]
 
         loss = self.criterion(preds * target_weight, targets * target_weight)
-        # loss = self.criterion(preds, targets, target_weight)
 
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
@@ -55,7 +52,6 @@ class PoseEstimationModel(pl.LightningModule):
             preds = preds[:, :targets.shape[1]]
 
         loss = self.criterion(preds * target_weight, targets * target_weight)
-        # loss = self.criterion(preds, targets, target_weight)
         self.log("val_loss", loss, on_epoch=True, prog_bar=True)
 
         if batch_idx == 0:
@@ -66,7 +62,12 @@ class PoseEstimationModel(pl.LightningModule):
         return loss
 
     def on_validation_epoch_end(self):
-        self.metric.log_to_tensorboard(self.logger, self.current_epoch)
+        summary = self.metric.compute()
+        for group, results in summary.items():
+            for k, v in results.items():
+                if 'AP' in k:
+                    self.log(f"metrics/{group}/{k}", v, prog_bar=False)
+        # self.metric.log_to_tensorboard(self.logger, self.current_epoch)
         self.metric.summarize()
         self.metric.reset()
 
@@ -101,7 +102,13 @@ class PoseEstimationModel(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.cfg.train.lr)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.cfg.train.lr_step, gamma=self.cfg.train.lr_gamma)
+
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=self.cfg.train.max_epochs,  
+            eta_min=self.cfg.train.min_lr     
+            )
+
         return [optimizer], [scheduler]
 
 
@@ -126,7 +133,7 @@ class PoseEstimationModel(pl.LightningModule):
         self._debug_preds.append(preds[0].detach().cpu())
 
         joints = batch["joints"][0].detach().cpu()
-        joints_vis = batch["joints_vis"][0].detach().cpu().unsqueeze(1)
+        joints_vis = batch["joints_vis"][0].detach().cpu()
         self._debug_gts.append(torch.cat([joints, joints_vis], dim=1))
 
     def _draw_keypoints_on_tensor(self, image_tensor, keypoints, color=(255, 0, 0)):
@@ -176,31 +183,3 @@ class PoseEstimationModel(pl.LightningModule):
 
         # For tensorboard
         return torch.from_numpy(image).permute(2, 0, 1).float() / 255.0
-
-
-# When using it, racket performance drops so for now stick to classic MSE
-class JointsMSELoss(nn.Module):
-    def __init__(self, use_target_weight):
-        super(JointsMSELoss, self).__init__()
-        self.criterion = nn.MSELoss(reduction='mean')
-        self.use_target_weight = use_target_weight
-
-    def forward(self, output, target, target_weight):
-        batch_size = output.size(0)
-        num_joints = output.size(1)
-        heatmaps_pred = output.reshape((batch_size, num_joints, -1)).split(1, 1)
-        heatmaps_gt = target.reshape((batch_size, num_joints, -1)).split(1, 1)
-        loss = 0
-
-        for idx in range(num_joints):
-            heatmap_pred = heatmaps_pred[idx].squeeze()
-            heatmap_gt = heatmaps_gt[idx].squeeze()
-            if self.use_target_weight:
-                loss += 0.5 * self.criterion(
-                    heatmap_pred.mul(target_weight[:, idx]),
-                    heatmap_gt.mul(target_weight[:, idx])
-                )
-            else:
-                loss += 0.5 * self.criterion(heatmap_pred, heatmap_gt)
-
-        return loss / num_joints

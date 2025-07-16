@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from tqdm import tqdm
 import numpy as np
 import torch
@@ -9,8 +8,6 @@ import cv2
 import json
 import os
 from time import time
-import _init_paths
-import models
 
 class TorchEstimator():
     def __init__(self, model_path, device=None):
@@ -114,12 +111,12 @@ def get_max_preds(batch_heatmaps):
 
     return keypoint_coords, max_values
 
-if __name__ == "__main__" :
+# if __name__ == "__main__" :
 
-    estimateur = TorchEstimator("models/pose_coco/xpose_mobilenetv2_256x192_60_epochs.pth")
-    input_tensor = torch.randn(10, 3, 256, 192)
+#     estimateur = TorchEstimator("models/pose_coco/xpose_mobilenetv2_256x192_60_epochs.pth")
+#     input_tensor = torch.randn(10, 3, 256, 192)
 
-    start = time.time()
-    output = estimateur.model(input_tensor)
-    end = time.time()
-    print(f"inference time: {end-start} sec")
+#     start = time.time()
+#     output = estimateur.model(input_tensor)
+#     end = time.time()
+#     print(f"inference time: {end-start} sec")

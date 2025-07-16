@@ -1,14 +1,14 @@
 """
-Interactive frame viewer and saver
+View video frames and save the desired ones.
 
-Défilez les frames d'une vidéo et cliquez pour sauvegarder la frame courante
+Usage:
+  python -m pre-annotation.choose_frame [VIDEO_PATH]
 """
 
 import cv2
 import os
 import argparse
 
-# Variables globales pour la frame courante
 current_frame = None
 current_frame_number = 0
 output_dir = None
@@ -20,7 +20,6 @@ def save_frame(event, x, y, flags, param):
     """
     global current_frame, current_frame_number, output_dir
     if event == cv2.EVENT_LBUTTONDOWN and current_frame is not None:
-        # Génération du nom de fichier avec zéro-padded sur 6 chiffres
         filename = os.path.join(output_dir, f"frame_{current_frame_number:06d}.jpg")
         cv2.imwrite(filename, current_frame)
         print(f"Saved {filename}")
@@ -32,12 +31,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     video_path = args.video_path
-    # Création du dossier de sortie à partir du nom de la vidéo
     basename = os.path.splitext(os.path.basename(video_path))[0]
     output_dir = basename
     os.makedirs(output_dir, exist_ok=True)
 
-    # Ouverture de la vidéo
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print(f"Cannot open video: {video_path}")
@@ -50,17 +47,14 @@ if __name__ == "__main__":
     cv2.setMouseCallback("Frame Viewer", save_frame)
 
     while True:
-        # Positionnement sur la frame souhaitée
         cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame_number)
         ret, frame = cap.read()
         if not ret:
             print("Failed to grab frame")
             break
 
-        # Copie de la frame courante pour la sauvegarde
         current_frame = frame.copy()
 
-        # Affichage du numéro de frame
         display = frame.copy()
         cv2.putText(display,
                     f"Frame: {current_frame_number}/{total_frames-1}",
@@ -71,11 +65,10 @@ if __name__ == "__main__":
 
         key = cv2.waitKey(0) & 0xFF
         if key == ord('q'):
-            # Quitter
             break
-        elif key in [ord('n'), 83]:  # 'n' ou flèche droite
+        elif key in [ord('n')]:
             current_frame_number = min(current_frame_number + 1, total_frames - 1)
-        elif key in [ord('b'), 81]:  # 'b' ou flèche gauche
+        elif key in [ord('b')]:
             current_frame_number = max(current_frame_number - 1, 0)
         elif key == ord('N'):  # +10 frames
             current_frame_number = min(current_frame_number + 10, total_frames - 1)

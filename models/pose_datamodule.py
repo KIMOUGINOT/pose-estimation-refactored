@@ -1,7 +1,7 @@
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, ConcatDataset
 from datasets import COCODataset
-from utils import HeatmapTargetGenerator, get_pose_transforms
+from utils import HeatmapTargetGenerator
 import os
 
 
@@ -39,7 +39,7 @@ class PoseDataModule(LightningDataModule):
                     image_size=tuple(self.cfg.image_size),
                     num_keypoints=self.cfg.num_keypoints,
                     target_generator=self.target_generator,
-                    transform=self._build_transforms(train=train),
+                    is_train = train,
                     use_gt_bbox=self.cfg.use_gt_bbox[i]
                 )
                 datasets.append(dataset)
@@ -83,6 +83,3 @@ class PoseDataModule(LightningDataModule):
             num_workers=self.cfg.num_workers,
             pin_memory=True
         )
-
-    def _build_transforms(self, train):
-        return get_pose_transforms(self.cfg.image_size, is_train=train)
